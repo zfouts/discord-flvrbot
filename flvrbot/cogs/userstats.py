@@ -1,11 +1,11 @@
-# cogs/user_stats.py
 import logging
 from discord.ext import commands
 from flvrbot.db import DBManager
+import json
 
 logger = logging.getLogger(__name__)
 
-class UserStats(commands.Cog):
+class UserStatsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.db_manager = DBManager()
@@ -31,34 +31,52 @@ class UserStats(commands.Cog):
         self.db_manager.update_stats(guild_id=guild_id, user_id=user_id, module=module, data=data)
         self.db_manager.update_user(guild_id=guild_id, user_id=user_id, last_seen=message.created_at, last_message=message.content)
 
-    @commands.command(help="Displays top 10 stats for the specified module for each user in the guild, sorted by characters count. Defaults to 'user' module.")
-    async def top10(self, ctx, module=None):
-        if not module:
+    @commands.command(name="top10", help="!top10 [module] [sort_by]")
+    async def top10(self, ctx, module=None, sort_by=None):
+        if module:
+            valid_modules = self.db_manager.get_valid_modules_and_sort_options()
+            if module not in valid_modules:
+                valid_module_keys = ", ".join(valid_modules.keys())
+                await ctx.send(f"Error, unsupported module. Try again! !top10 [{valid_module_keys}] are valid choices.")
+                return
+            
+            if not sort_by:
+                valid_sorts = ", ".join(valid_modules[module])
+                await ctx.send(f"Please provide a sort_by parameter. Valid sort_by options for {module} are: {valid_sorts}")
+                return
+
+            if sort_by not in valid_modules[module]:
+                valid_sorts = ", ".join(valid_modules[module])
+                await ctx.send(f"Invalid sort_by option. Valid sort_by options for {module} are: {valid_sorts}")
+                return
+
+        else:
+            # Default to user module and characters if no module is specified
             module = 'user'
-
+            sort_by = 'characters'
+        
+        # Continue with data fetching and sorting logic
         guild_id = ctx.guild.id
+        stats_data = self.db_manager.get_stats(guild_id, module)
+        if not stats_data:
+            await ctx.send("No statistics found for the specified module.")
+            return
 
-        users_with_stats = self.db_manager.get_users_with_stats(guild_id, module)  # Fetch users with stats recorded for the guild and module
+        sorted_stats = sorted(
+            stats_data.items(),
+            key=lambda x: x[1].get(sort_by, 0),
+            reverse=True
+        )[:10]  # Limit to top 10
 
-        top10_users = []
-        for user in users_with_stats:
-            stats = self.db_manager.get_stats(guild_id, user.user_id, module)  # Fetch stats for the user and module
-            if 'characters' in stats:
-                top10_users.append((user, stats['characters']))  # Append user and character count to list
+        if not sorted_stats:
+            await ctx.send("No data available for sorting.")
+            return
 
-        top10_users.sort(key=lambda x: x[1], reverse=True)  # Sort users by character count in descending order
-        top10_users = top10_users[:10]  # Take top 10 users
+        result_message = f"Top 10 Statistics for **{module}** sorted by **{sort_by}**: "
+        result_message += "  ".join(f"**{index}. <@{user_id}>**: {stats.get(sort_by, 0)}" for index, (user_id, stats) in enumerate(sorted_stats, start=1))
 
-        output = ""
-        for user, characters_count in top10_users:
-            output += f"{user.display_name}: {characters_count} characters\n"
-
-        await ctx.send(f"Top 10 {module.capitalize()} Stats for each user in the guild, sorted by character count:\n{output}")
-
-
-
+        await ctx.send(result_message)
 
 def setup(bot):
-    bot.add_cog(UserStats(bot))
-
+    bot.add_cog(UserStatsCog(bot))
 

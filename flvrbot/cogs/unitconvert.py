@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import pint
 
-class UnitConverter(commands.Cog):
+class UnitConverterCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.ureg = pint.UnitRegistry()
@@ -37,5 +37,5 @@ class UnitConverter(commands.Cog):
             await ctx.send(str(e))
 
 def setup(bot):
-    bot.add_cog(UnitConverter(bot))
+    bot.add_cog(UnitConverterCog(bot))
 

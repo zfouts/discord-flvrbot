@@ -1,0 +1,49 @@
+version: '3'
+services:
+  pgsql:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER:${POSTGRES_USER}
+      - POSTGRES_PASSWORD:${POSTGRES_PASSWORD}
+      - POSTGRES_DB:${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -U flvrbot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    env_file:
+      - .env
+
+  flvrbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DB_URL=${DB_URL}
+      - GOOGLE_MAPS_APIKEY=${GOOGLE_MAPS_APIKEY}
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - OPENWEATHER_APIKEY=${OPENWEATHER_APIKEY}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - WEATHER_API_VERSION=${WEATHER_API_VERSION}
+    volumes:
+      - ./example/cogs:/app/cogs
+    env_file:
+      - .env
+    depends_on:
+      pgsql:
+        condition: service_healthy        
+
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    depends_on:
+      pgsql:
+        condition: service_healthy
+        

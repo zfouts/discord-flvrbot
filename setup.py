@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='flvrbot',
-    version='0.1.1',
+    version='0.1.2',
     packages=find_packages(),
     install_requires=[
         'aiohttp==3.9.3',
@@ -10,6 +10,7 @@ setup(
         'async-timeout==4.0.3',
         'asyncio==3.4.3',
         'attrs==23.2.0',
+        'python-dateutil',
         'certifi==2024.2.2',
         'chardet==5.2.0',
         'charset-normalizer==3.3.2',
