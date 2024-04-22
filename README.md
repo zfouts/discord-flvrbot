@@ -25,6 +25,7 @@ See [Dockerfile](https://github.com/zfouts/discord-flvrbot/blob/main/Dockerfile)
 - `/8ball`: Returns an 8-ball response. Example: `/eightball`
 - `/chucknorris`: Sends a random Chuck Norris Fact from https://chucknorrisfacts.net/
 - `/convert`: Converts units. Usage: `/convert <value> <from_unit> <to_unit>`. Utilizes the [Pint](https://pint.readthedocs.io/en/stable/) library.
+- `/currency`: Converts currency. Usage: `/currency <value> <from_currency> <to_currency>`. Utilizes the [exchange rate api](https://www.exchangerate-api.com/).
 - `/lenny`: Sends a random lenny face
 - `/mock`: Creates mock text. Example `/mock my bot is better than yours` -> `My BoT iS bEtTeR tHaN yOuRs`
 - `/ping`: Shows bots latency
