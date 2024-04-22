@@ -28,8 +28,7 @@ class CogLoader:
             'flvrbot.cogs.roulette',
             'flvrbot.cogs.slap',
             'flvrbot.cogs.time',
-            'flvrbot.cogs.weather',
-            'flvrbot.cogs.userstats'
+            'flvrbot.cogs.weather'
         ]
         for cog_name in predefined_cogs:
             try:

@@ -41,15 +41,19 @@ class TimeCog(commands.Cog):
             "AWST": "Australia/Perth"   # Australian Western Standard Time
         }
 
-    @commands.command(help="Displays the current time in a specified timezone. Example: !time America/Chicago")
-    async def time(self, ctx, timezone='UTC'):
+    @discord.slash_command(name="time", description="Displays the current time in a specified timezone.")
+    async def time(
+        self, 
+        ctx: discord.ApplicationContext, 
+        timezone: discord.Option(str, description="Enter timezone", default="UTC") # type: ignore
+    ):
         # Check if the input timezone is in the mapping and convert it
         actual_timezone = self.timezone_mapping.get(timezone.upper(), timezone)
 
         try:
             current_time = datetime.now(pytz.timezone(actual_timezone))
         except pytz.exceptions.UnknownTimeZoneError:
-            await ctx.send(f"Unknown timezone '{timezone}'. Please provide a valid timezone.")
+            await ctx.respond(f"Unknown timezone '{timezone}'. Please provide a valid timezone.")
             return
 
         time_24hr = current_time.strftime('%H:%M')
@@ -57,15 +61,19 @@ class TimeCog(commands.Cog):
         response = (f"Current time in **{timezone}** ({actual_timezone}):\n"
                     f"24-hour format: {time_24hr}\n"
                     f"12-hour format: {time_12hr}")
-        await ctx.send(response)
+        await ctx.respond(response)
 
-    @commands.command(help="Converts a given timestamp to a Unix timestamp and tells how long until that date. Example: !timeuntil '2024-04-20' or April 20th, 2024")
-    async def timeuntil(self, ctx, *, time_string):
+    @discord.slash_command(name="timeuntil", description="Converts a given timestamp to a Unix timestamp and tells how long until that date.")
+    async def timeuntil(
+        self, 
+        ctx: discord.ApplicationContext, 
+        time_string: discord.Option(str, description="Enter a date (e.g., '2024-04-20' or 'April 20th, 2024')") # type: ignore
+    ):
         try:
             # Parse the date string to datetime object
             target_time = parser.parse(time_string)
         except ValueError:
-            await ctx.send("Invalid date format. Please provide a valid date.")
+            await ctx.respond("Invalid date format. Please provide a valid date.")
             return
 
         # Unix timestamp
@@ -80,7 +88,7 @@ class TimeCog(commands.Cog):
 
         response = (f"Unix timestamp: {unix_timestamp}\n"
                     f"Time until date: {time_until}")
-        await ctx.send(response)
+        await ctx.respond(response)
 
 def setup(bot):
     bot.add_cog(TimeCog(bot))

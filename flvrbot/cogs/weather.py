@@ -19,6 +19,10 @@ weather_emojis = {
 class WeatherCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        logger.info("Weather Cog has been loaded.")
         self.weather_api_key = os.getenv('OPENWEATHER_APIKEY')
         self.maps_api_key = os.getenv('GOOGLE_MAPS_APIKEY')
 
@@ -26,24 +30,34 @@ class WeatherCog(commands.Cog):
             logger.error("API keys are missing")
             raise RuntimeError("API keys not found in environment variables")
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        logger.info("Weather module has been loaded")
+    @commands.slash_command(
+        name="weather",
+        description="Configure reaction roles for the server.",
+        help="Gets weather information for a given location"
+    )
+    async def weather(self, ctx, location: discord.Option(str, "Enter the location")): # type: ignore
+        logger.debug(f"Received message location: {location}")
+        try:
+            logger.info(f"Received request for weather with location: {location}")
+            lat, lon, address = await self.get_lat_lon(location)
+            if lat is None or lon is None:
+                await ctx.respond("Could not find the location specified. Please check the location and try again.")
+                return
 
-    @commands.command(name="weather", aliases=["w"], help="Gets weather information for a given location")
-    async def weather(self, ctx, *, location: str):
-        logger.info(f"Received request for weather with location: {location}")
-        lat, lon, address = await self.get_lat_lon(location)
-        if lat is None or lon is None:
-            await ctx.send("Could not find the location specified. Please check the location and try again.")
-            return
+            weather_data = await self.fetch_weather(lat, lon)
+            if weather_data:
+                response = self.format_weather_response(weather_data, address)
+                await ctx.respond(response)
+            else:
+                await ctx.respond("Failed to retrieve weather data. Please try again later.")
 
-        weather_data = await self.fetch_weather(lat, lon)
-        if weather_data:
-            response = self.format_weather_response(weather_data, address)
-            await ctx.send(response)
-        else:
-            await ctx.send("Failed to retrieve weather data. Please try again later.")
+        except discord.NotFound:
+            await ctx.respond("Message or channel not found in the specified channel.")
+        except discord.Forbidden:
+            await ctx.respond("Bot does not have the necessary permissions to perform this action.")
+        except Exception as e:
+            logger.error(f"An unexpected error occurred: {e}")
+            await ctx.respond("An unexpected error occurred. Please contact the server administrator.")
 
     async def get_lat_lon(self, location):
         url = f"https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={self.maps_api_key}"
@@ -60,25 +74,6 @@ class WeatherCog(commands.Cog):
         except requests.RequestException as e:
             logger.error(f"Request error during geocoding: {str(e)}")
             return None, None, None
-
-    # This is valid until June 2024, then you must migrate to 3.0.
-    # "One Call by Call" subscription plan will be required after June 2024: https://openweathermap.org/price
-    # 2.5 does not support alerts, but we are still including the logic for now.
-    """
-    async def fetch_weather(self, lat, lon):
-        url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude=minutely,hourly,daily&appid={self.weather_api_key}&units=metric"
-        loop = asyncio.get_running_loop()
-        try:
-            response = await loop.run_in_executor(None, requests.get, url)
-            if response.status_code == 200:
-                return response.json()
-            else:
-                logger.error(f"HTTP Error {response.status_code} for weather API")
-                return None
-        except requests.RequestException as e:
-            logger.error(f"Request error during weather data fetch: {str(e)}")
-            return None
-    """
 
     async def fetch_weather(self, lat, lon):
         api_version = os.getenv("WEATHER_API_VERSION", "2.5")
@@ -114,7 +109,7 @@ class WeatherCog(commands.Cog):
         temp = current['temp']
         feels_like = current['feels_like']
         description = current['weather'][0]['description'].capitalize()
-        
+
         main_weather = current['weather'][0]['main']
 
         emoji = weather_emojis.get(main_weather, "🌞")
@@ -186,4 +181,9 @@ class WeatherCog(commands.Cog):
 
 def setup(bot):
     bot.add_cog(WeatherCog(bot))
+
+
+
+
+
 
