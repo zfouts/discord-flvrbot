@@ -24,13 +24,12 @@ class UserStatsCog(commands.Cog):
 
         guild_id = message.guild.id
         user_id = message.author.id
-        display_name = message.author.nick
         joined_guild = message.author.joined_at.replace(tzinfo=pytz.UTC)
 
         if not message.author.bot:  # It's a good practice to skip bots
             existing_users = self.db_manager.get_users(guild_id, user_id)
             if not existing_users:  # This checks if the list is empty
-                self.db_manager.add_user(guild_id=guild_id, user_id=user_id, display_name=display_name, joined_guild=joined_guild)
+                self.db_manager.add_user(guild_id=guild_id, user_id=user_id, joined_guild=joined_guild)
 
         message_content = ""
         if message.content:
@@ -93,7 +92,7 @@ class UserStatsCog(commands.Cog):
                     existing_users = self.db_manager.get_users(guild.id, member.id)
                     if not existing_users:  # This checks if the list is empty
                         joined_guild = member.joined_at.replace(tzinfo=pytz.UTC)
-                        self.db_manager.add_user(guild_id=guild.id, user_id=member.id, display_name=member.display_name, joined_guild=joined_guild)
+                        self.db_manager.add_user(guild_id=guild.id, user_id=member.id, joined_guild=joined_guild)
         logger.info("Guild users added to the database successfully.")
 
     @commands.slash_command(name="seen", description="Check when was the last time a user was seen.")
@@ -113,19 +112,25 @@ class UserStatsCog(commands.Cog):
             logger.debug(f"User data: {user_data}")
 
             if user_data:
-                last_seen = user_data.get('last_seen')
-
-                if last_seen:
-                    last_seen_formatted = last_seen.strftime("%B %d, %Y")
-                    message_content = f"I last saw {user.mention} on {last_seen_formatted}."
-                    await ctx.respond(message_content)
+                # Since user_data uses DB ids as keys, find the correct entry by user_id
+                user_entry = next((details for data, details in user_data.items() if details['user_id'] == user_id), None)
+                if user_entry:
+                    last_seen = user_entry['last_seen']
+                    if last_seen:
+                        last_seen_formatted = last_seen.strftime("%B %d, %Y at %I:%M %p UTC")
+                        message_content = f"I last saw {user.mention} on {last_seen_formatted}."
+                        await ctx.respond(message_content)
+                    else:
+                        await ctx.respond(f"I haven't seen {user.mention} before.", ephemeral=True)
                 else:
-                    await ctx.respond(f"I haven't seen {user.mention} before.", ephemeral=True)
+                    await ctx.respond(f"No data found for {user.mention}.", ephemeral=True)
             else:
                 await ctx.respond(f"No data found for {user.mention}.", ephemeral=True)
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
             traceback.print_exc()
+
+
 
 def setup(bot):
     bot.add_cog(UserStatsCog(bot))

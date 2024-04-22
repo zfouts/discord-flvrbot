@@ -19,7 +19,6 @@ class User(Base):
     guild_id = Column(BigInteger)
     guild_joined = Column(DateTime)
     user_id = Column(BigInteger)
-    display_name = Column(JSON, default=[], nullable=False)
     last_seen = Column(DateTime, default=None, nullable=True)
 
 
@@ -34,7 +33,7 @@ class Stats(Base):
 
 class DBManager:
     def __init__(self):
-        self.db_url = os.environ.get('DB_URL','sqlite:////tmp/flvrbot.db')
+        self.db_url = os.environ.get('DB_URL', 'sqlite:////tmp/flvrbot.db')
         logger.debug(f"Our db connection string is {self.db_url}")
         self.engine = create_engine(self.db_url)
         self.Session = sessionmaker(bind=self.engine)
@@ -73,30 +72,27 @@ class DBManager:
                 query = query.filter_by(user_id=user_id)
             # Convert data to dictionary with user id as key
             result = {user.id: {
-                "display_name": user.display_name,
+                "user_id": user.user_id,
+                "guild_id": user.guild_id,
                 "last_seen": user.last_seen
             } for user in query.all()}
             logger.debug(f"Result: {result}")
             return result
         return self.execute_transaction(transaction)
 
-    def add_user(self, guild_id, user_id, display_name, joined_guild):
+    def add_user(self, guild_id, user_id, joined_guild):
         logger.info("Adding user to database...")
         def transaction(session):
-            user = User(guild_id=guild_id, user_id=user_id, display_name=display_name, guild_joined=joined_guild)
+            user = User(guild_id=guild_id, user_id=user_id, guild_joined=joined_guild)
             session.add(user)
             logger.info("User added successfully.")
         self.execute_transaction(transaction)
 
-    def update_user(self, user_id, guild_id, display_name=None, last_seen=None):
+    def update_user(self, user_id, guild_id, last_seen=None):
         logger.info("Updating user...")
         def transaction(session):
             user = session.query(User).filter_by(user_id=user_id, guild_id=guild_id).first()
             if user:
-                if display_name is not None:
-                    display_names = user.display_name or []
-                    display_names.append(display_name)
-                    user.display_name = json.dumps(display_names)
                 if last_seen is not None:
                     user.last_seen = last_seen
                 logger.info("User updated successfully.")
@@ -145,59 +141,4 @@ class DBManager:
                     valid_modules[module] = set(data_keys)
             return valid_modules
         return self.execute_transaction(transaction)
-    """
-    # config table CRUD
-    def add_config(self, guild_id, channel_id, module, data):
-        logger.info("Adding config to database...")
-        def transaction(session):
-            config = Config(guild_id=guild_id, channel_id=channel_id, module=module, data=data)
-            session.add(config)
-            logger.info("Config added successfully.")
-        self.execute_transaction(transaction)
 
-    def update_config(self, guild_id, channel_id, module, data):
-        logger.info("Updating config...")
-        def transaction(session):
-            config = session.query(Config).filter_by(guild_id=guild_id, channel_id=channel_id, module=module).first()
-            if config:
-                config.data = data
-                logger.info("Config updated successfully.")
-            else:
-                logger.warning(f"Config not found for guild_id {guild_id}, channel_id {channel_id}, and module {module}.")
-        self.execute_transaction(transaction)
-
-    def get_config(self, guild_id, channel_id, module=None):
-        logger.info("Fetching config...")
-        def transaction(session):
-            config = session.query(Config).filter_by(guild_id=guild_id, channel_id=channel_id, module=module).first()
-            if config:
-                logger.info("Config fetched successfully.")
-                return config
-            else:
-                logger.warning(f"No config found for guild_id {guild_id}, channel_id {channel_id}, and module {module}.")
-                return None
-        return self.execute_transaction(transaction)
-
-    def delete_config(self, guild_id, channel_id, module):
-        logger.info("Deleting config...")
-        def transaction(session):
-            config = session.query(Config).filter_by(guild_id=guild_id, channel_id=channel_id, module=module).first()
-            if config:
-                session.delete(config)
-                logger.info("Config deleted successfully.")
-            else:
-                logger.warning(f"Config not found for guild_id {guild_id}, channel_id {channel_id}, and module {module}.")
-        self.execute_transaction(transaction)
-
-    def get_all_configs(self, guild_id, module=None):
-        logger.info("Fetching all configs...")
-        def transaction(session):
-            configs = session.query(Config).filter_by(guild_id=guild_id, module=module).all()
-            if configs:
-                logger.info("Configs fetched successfully.")
-                return configs
-            else:
-                logger.warning(f"No configs found for guild_id {guild_id} and module {module}.")
-                return []
-        return self.execute_transaction(transaction)
-    """
