@@ -17,12 +17,12 @@ class UnitConverterCog(commands.Cog):
     ):
         try:
             # Check if this is a temperature conversion and handle accordingly
-            if unit_from in ["fahrenheit", "F", "degree_Fahrenheit"] and unit_to in ["celsius", "C", "degree_Celsius"]:
+            if unit_from in ["f", "fahrenheit", "F", "degree_Fahrenheit"] and unit_to in ["c", "celsius", "C", "degree_Celsius"]:
                 temp = pint.Quantity(value, self.ureg.degree_Fahrenheit)
                 converted_temp = temp.to(self.ureg.degree_Celsius)
                 friendly_from = "Fahrenheit"
                 friendly_to = "Celsius"
-            elif unit_from in ["celsius", "C", "degree_Celsius"] and unit_to in ["fahrenheit", "F", "degree_Fahrenheit"]:
+            elif unit_from in ["c", "celsius", "C", "degree_Celsius"] and unit_to in ["f", "fahrenheit", "F", "degree_Fahrenheit"]:
                 temp = pint.Quantity(value, self.ureg.degree_Celsius)
                 converted_temp = temp.to(self.ureg.degree_Fahrenheit)
                 friendly_from = "Celsius"
