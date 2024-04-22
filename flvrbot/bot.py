@@ -16,7 +16,13 @@ class FlvrBot(commands.Bot):
 
         # Setup Discord
         self.token = token
-        intents = discord.Intents.all()
+        intents = discord.Intents.default()
+        #intents.guilds = True
+        #intents.guild_members = True
+        #intents.guild_messages = True
+        #intents.message_content = True
+        #intents.direct_messages = True
+
         super().__init__(command_prefix=command_prefix, description=description, intents=intents)
 
         # Setup DBManager
@@ -28,24 +34,6 @@ class FlvrBot(commands.Bot):
         @self.event
         async def on_ready():
             self.logger.info(f'Logged in as {self.user}')
-
-        """
-        # Handle errors
-        @self.event
-        async def on_command_error(ctx, error):
-            if isinstance(error, commands.CommandNotFound):
-                await ctx.send('That command does not exist.')
-            elif isinstance(error, commands.MissingRequiredArgument):
-                await ctx.send('You are missing a required argument.')
-            elif isinstance(error, commands.CheckFailure):
-                await ctx.send("You don't have the necessary permissions to use this command.")
-            elif isinstance(error, commands.CommandOnCooldown):
-                await ctx.send(f"This command is on cooldown. Please wait {error.retry_after:.2f} seconds.")
-            else:
-                # Generic error message for unexpected errors
-                await ctx.send(f'An unexpected error occurred: {error}')
-                self.logger.error(f'An unexpected error occurred: {error}')
-        """
 
     def run(self):
         super().run(self.token)

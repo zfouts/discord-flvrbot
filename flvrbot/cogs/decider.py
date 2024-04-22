@@ -19,7 +19,6 @@ class DeciderCog(commands.Cog):
     # Eightball Command
     #
     @discord.slash_command(name="8ball", description="Return an 8-ball response.")
-    @commands.has_permissions(administrator=True)
     async def info(
         self,
         ctx: discord.ApplicationContext): # type: ignore
