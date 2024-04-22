@@ -30,7 +30,6 @@ class User(Base):
     user_id = Column(BigInteger)
     display_name = Column(JSON, default=[], nullable=False)
     last_seen = Column(DateTime, default=None, nullable=True)
-    last_message = Column(Text, nullable=True)
 
 
 class Stats(Base):
@@ -99,8 +98,7 @@ class DBManager:
             # Convert data to dictionary with user id as key
             result = {user.id: {
                 "display_name": user.display_name,
-                "last_seen": user.last_seen,
-                "last_message": user.last_message
+                "last_seen": user.last_seen
             } for user in query.all()}
             logger.debug(f"Result: {result}")
             return result
@@ -114,7 +112,7 @@ class DBManager:
             logger.info("User added successfully.")
         self.execute_transaction(transaction)
 
-    def update_user(self, user_id, guild_id, display_name=None, last_seen=None, last_message=None):
+    def update_user(self, user_id, guild_id, display_name=None, last_seen=None):
         logger.info("Updating user...")
         def transaction(session):
             user = session.query(User).filter_by(user_id=user_id, guild_id=guild_id).first()
@@ -125,8 +123,6 @@ class DBManager:
                     user.display_name = json.dumps(display_names)
                 if last_seen is not None:
                     user.last_seen = last_seen
-                if last_message is not None:
-                    user.last_message = last_message
                 logger.info("User updated successfully.")
             else:
                 logger.warning(f"User with user_id {user_id} and guild_id {guild_id} not found.")

@@ -114,15 +114,10 @@ class UserStatsCog(commands.Cog):
 
             if user_data:
                 last_seen = user_data.get('last_seen')
-                last_message = user_data.get('last_message')
 
                 if last_seen:
                     last_seen_formatted = last_seen.strftime("%B %d, %Y")
                     message_content = f"I last saw {user.mention} on {last_seen_formatted}."
-                    if last_message:
-                        message_content += f" They said: \"{last_message}\""
-                    else:
-                        message_content += " No message was recorded."
                     await ctx.respond(message_content)
                 else:
                     await ctx.respond(f"I haven't seen {user.mention} before.", ephemeral=True)
