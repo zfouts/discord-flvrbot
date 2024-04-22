@@ -1,4 +1,3 @@
-
 import logging
 import discord
 from discord.ext import commands
@@ -25,12 +24,24 @@ class UserStatsCog(commands.Cog):
 
         guild_id = message.guild.id
         user_id = message.author.id
+        display_name = message.author.nick
+        joined_guild = message.author.joined_at.replace(tzinfo=pytz.UTC)
+
+        if not message.author.bot:  # It's a good practice to skip bots
+            existing_users = self.db_manager.get_users(guild_id, user_id)
+            if not existing_users:  # This checks if the list is empty
+                self.db_manager.add_user(guild_id=guild_id, user_id=user_id, display_name=display_name, joined_guild=joined_guild)
+
+        message_content = ""
+        if message.content:
+            message_content = message.content
 
         module = "user"
         data = {
             "messages": 1,
-            "characters": len(message.content)
+            "characters": len(message_content)
         }
+
         self.db_manager.update_stats(guild_id=guild_id, user_id=user_id, module=module, data=data)
         self.db_manager.update_user(guild_id=guild_id, user_id=user_id, last_seen=message.created_at, last_message=message.content)
 
@@ -44,18 +55,18 @@ class UserStatsCog(commands.Cog):
         valid_modules = self.db_manager.get_valid_modules_and_sort_options()
         if module not in valid_modules:
             valid_module_keys = ", ".join(valid_modules.keys())
-            await ctx.respond(f"Error, unsupported module. Try again! Valid choices are: {valid_module_keys}")
+            await ctx.respond(f"Error, unsupported module. Try again! Valid choices are: {valid_module_keys}", ephemeral=True)
             return
 
         if sort_by not in valid_modules[module]:
             valid_sorts = ", ".join(valid_modules[module])
-            await ctx.respond(f"Invalid sort_by option. Valid sort_by options for {module} are: {valid_sorts}")
+            await ctx.respond(f"Invalid sort_by option. Valid sort_by options for {module} are: {valid_sorts}", ephemeral=True)
             return
 
         guild_id = ctx.guild.id
         stats_data = self.db_manager.get_stats(guild_id, module)
         if not stats_data:
-            await ctx.respond("No statistics found for the specified module.")
+            await ctx.respond("No statistics found for the specified module.", ephemeral=True)
             return
 
         sorted_stats = sorted(
@@ -65,22 +76,14 @@ class UserStatsCog(commands.Cog):
         )[:10]  # Limit to top 10
 
         if not sorted_stats:
-            await ctx.respond("No data available for sorting.")
+            await ctx.respond("No data available for sorting.", ephemeral=True)
             return
 
-        """
-        # Old method
         result_message = f"Top 10 Statistics for **{module}** sorted by **{sort_by}**: "
         result_message += "  ".join(f"**{index}. <@{user_id}>**: {stats.get(sort_by, 0)}" for index, (user_id, stats) in enumerate(sorted_stats, start=1))
-        """
 
-        embed = discord.Embed(title=f"Top 10 Statistics for {module}", description=f"Sorted by {sort_by}", color=discord.Color.blue())
-        for index, (user_id, stats) in enumerate(sorted_stats, start=1):
-            user_name = self.bot.get_user(user_id)
-            user_name = user_name.display_name if user_name else f"UserID {user_id}"
-            embed.add_field(name=f"{index}. {user_name}", value=f"{stats.get(sort_by, 0)}", inline=False)
+        await ctx.respond(result_message)
 
-        await ctx.respond(embed=embed)
 
     async def add_guild_users_to_db(self):
         logger.info("Adding guild users to the database...")
@@ -95,8 +98,8 @@ class UserStatsCog(commands.Cog):
 
     @commands.slash_command(name="seen", description="Check when was the last time a user was seen.")
     async def seen(
-        self, 
-        ctx: discord.ApplicationContext, 
+        self,
+        ctx: discord.ApplicationContext,
         user: discord.Option(discord.Member, description="Select a user to check") # type: ignore
     ):
         guild_id = ctx.guild.id
@@ -122,12 +125,12 @@ class UserStatsCog(commands.Cog):
                         message_content += " No message was recorded."
                     await ctx.respond(message_content)
                 else:
-                    await ctx.respond(f"I haven't seen {user.mention} before.")
+                    await ctx.respond(f"I haven't seen {user.mention} before.", ephemeral=True)
             else:
-                await ctx.respond(f"No data found for {user.mention}.")
+                await ctx.respond(f"No data found for {user.mention}.", ephemeral=True)
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
-            traceback.print_exc()  # Print traceback to console for debugging
+            traceback.print_exc()
 
 def setup(bot):
     bot.add_cog(UserStatsCog(bot))
