@@ -11,16 +11,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 Base = declarative_base()
-"""
-class Config(Base):
-    __tablename__ = 'config'
 
-    id = Column(Integer, primary_key=True)
-    guild_id = Column(BigInteger)
-    channel_id = Column(BigInteger)
-    module = Column(Text)
-    data = Column(JSON)
-"""
 class User(Base):
     __tablename__ = 'users'
 
@@ -72,21 +63,6 @@ class DBManager:
             session.close()
 
     # user table CRUD
-    """
-    def get_users(self, guild_id=None, user_id=None):
-        logger.info("Fetching users from database...")
-        def transaction(session):
-            query = session.query(User)
-            if guild_id is not None:
-                query = query.filter_by(guild_id=guild_id)
-            if user_id is not None:
-                query = query.filter_by(user_id=user_id)
-            # Convert data to JSON or dict immediately
-            result = [(user.id, user.display_name) for user in query.all()]
-            logger.debug(f"Result: {result}")
-            return result
-        return self.execute_transaction(transaction)
-    """
     def get_users(self, guild_id=None, user_id=None):
         logger.info("Fetching users from database...")
         def transaction(session):

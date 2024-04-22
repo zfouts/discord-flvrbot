@@ -43,7 +43,7 @@ class UserStatsCog(commands.Cog):
         }
 
         self.db_manager.update_stats(guild_id=guild_id, user_id=user_id, module=module, data=data)
-        self.db_manager.update_user(guild_id=guild_id, user_id=user_id, last_seen=message.created_at, last_message=message.content)
+        self.db_manager.update_user(guild_id=guild_id, user_id=user_id, last_seen=message.created_at)
 
     @commands.slash_command(name="top10", description="Displays top 10 statistics for a specified module and sort_by option.")
     async def top10(
