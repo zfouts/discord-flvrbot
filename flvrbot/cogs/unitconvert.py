@@ -7,8 +7,14 @@ class UnitConverterCog(commands.Cog):
         self.bot = bot
         self.ureg = pint.UnitRegistry()
 
-    @commands.command(help='Converts units: !convert <value> <from_unit> <to_unit>')
-    async def convert(self, ctx, value: float, unit_from: str, unit_to: str):
+    @discord.slash_command(name="convert", description="Converts units from one to another.")
+    async def convert(
+        self, 
+        ctx: discord.ApplicationContext,
+        value: discord.Option(float, description="Enter the numerical value you want to convert"), # type: ignore
+        unit_from: discord.Option(str, description="Enter the unit you are converting from"), # type: ignore
+        unit_to: discord.Option(str, description="Enter the unit you are converting to") # type: ignore
+    ):
         try:
             # Check if this is a temperature conversion and handle accordingly
             if unit_from in ["fahrenheit", "F", "degree_Fahrenheit"] and unit_to in ["celsius", "C", "degree_Celsius"]:
@@ -30,11 +36,11 @@ class UnitConverterCog(commands.Cog):
                 friendly_from = str(quantity.units)
                 friendly_to = str(converted_temp.units)
 
-            # Send the result back to the Discord channel
-            await ctx.send(f"{value} {friendly_from} is {converted_temp.magnitude:.2f} {friendly_to}")
+            # Send the result back to the Discord channel using respond
+            await ctx.respond(f"{value} {friendly_from} is {converted_temp.magnitude:.2f} {friendly_to}")
         except Exception as e:
             # Send an error message if something goes wrong (e.g., invalid units)
-            await ctx.send(str(e))
+            await ctx.respond(str(e))
 
 def setup(bot):
     bot.add_cog(UnitConverterCog(bot))

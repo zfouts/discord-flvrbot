@@ -34,28 +34,28 @@ class RektCog(commands.Cog):
     async def on_ready(self):
         self.logger.info("Rekt module has been loaded")
 
-    @commands.command(help="Rekts another user. Example: !rekt <@username>")
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def rekt(self, ctx, member: discord.Member = None):
-        if not member:
-            await ctx.send("You need to specify a user to rekt!")
-            return
+    @commands.slash_command(name="rekt", description="Rekt a member")
+    async def rekt(
+        self,
+        ctx: discord.ApplicationContext,
+        member: discord.Option(discord.Member, description="Select a member", required=True) # type: ignore
+        ):
     
         title = random.choice(self.rekt_list)
         template = random.choice(self.rekt_templates)
         message = template.format(user=member.mention, title=title)
-        await ctx.send(message)
-    
+        await ctx.respond(message)
+
         guild_id = ctx.guild.id
         module = "rekt"
         stats_updates = {
             ctx.author.id: {"attack": 1, "victim": 0},
             member.id: {"attack": 0, "victim": 1}
         }
-    
+
         for user_id, data in stats_updates.items():
             self.db_manager.update_stats(guild_id=guild_id, user_id=user_id, module=module, data=data)
-        
+
 
 def setup(bot):
     bot.add_cog(RektCog(bot))
