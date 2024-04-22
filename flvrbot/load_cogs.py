@@ -25,6 +25,7 @@ class CogLoader:
             'flvrbot.cogs.unitconvert',
             'flvrbot.cogs.rekt',
             'flvrbot.cogs.currency',
+            'flvrbot.cogs.quotes',
             'flvrbot.cogs.decider',
             'flvrbot.cogs.roulette',
             'flvrbot.cogs.slap',

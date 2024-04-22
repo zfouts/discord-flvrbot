@@ -2,7 +2,7 @@
 import logging
 import json
 import os
-from sqlalchemy import create_engine, Column, Integer, BigInteger, DateTime, JSON, Text
+from sqlalchemy import create_engine, Column, Integer, BigInteger, DateTime, JSON, Text, and_, or_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
@@ -11,6 +11,16 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 Base = declarative_base()
+
+class Quote(Base):
+    __tablename__ = 'quotes'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, nullable=False)
+    guild_id = Column(BigInteger, nullable=False)
+    message = Column(Text, nullable=False)
+    date_submitted = Column(DateTime, nullable=False, default=datetime.utcnow)
+    date_last_viewed = Column(DateTime, nullable=True)
 
 class User(Base):
     __tablename__ = 'users'
@@ -140,5 +150,95 @@ class DBManager:
                 else:
                     valid_modules[module] = set(data_keys)
             return valid_modules
+        return self.execute_transaction(transaction)
+
+    # Quote CRUD
+    def add_quote(self, user_id, guild_id, message):
+        logger.info("Adding new quote to the database...")
+        def transaction(session):
+            quote = Quote(
+                user_id=user_id, 
+                guild_id=guild_id, 
+                message=message,
+                date_submitted=datetime.utcnow()
+            )
+            session.add(quote)
+            logger.info("Quote added successfully.")
+        self.execute_transaction(transaction)
+
+    def get_quotes(self, user_id=None, guild_id=None):
+        logger.info("Fetching quotes from database...")
+        def transaction(session):
+            query = session.query(Quote)
+            if guild_id:
+                query = query.filter_by(guild_id=guild_id)
+            if user_id:
+                query = query.filter_by(user_id=user_id)
+            result = [{
+                "id": quote.id,
+                "user_id": quote.user_id,
+                "guild_id": quote.guild_id,
+                "message": quote.message,
+                "date_submitted": quote.date_submitted,
+                "date_last_viewed": quote.date_last_viewed
+            } for quote in query.all()]
+            logger.debug(f"Quotes fetched: {result}")
+            return result
+        return self.execute_transaction(transaction)
+
+    def update_quote_last_viewed(self, quote_id, last_viewed_time):
+        logger.info("Updating quote's last viewed date...")
+        def transaction(session):
+            quote = session.query(Quote).filter_by(id=quote_id).first()
+            if quote:
+                quote.date_last_viewed = last_viewed_time
+                logger.info("Quote last viewed date updated successfully.")
+            else:
+                logger.warning(f"Quote with id {quote_id} not found.")
+        self.execute_transaction(transaction)
+
+    def get_quote_by_id(self, quote_id, guild_id):
+        logger.info("Fetching quote by ID...")
+        def transaction(session):
+            quote = session.query(Quote).filter(and_(Quote.id == quote_id, Quote.guild_id == guild_id)).first()
+            if quote:
+                return {
+                    "id": quote.id,
+                    "user_id": quote.user_id,
+                    "guild_id": quote.guild_id,
+                    "message": quote.message,
+                    "date_submitted": quote.date_submitted,
+                    "date_last_viewed": quote.date_last_viewed
+                }
+            else:
+                return None
+        return self.execute_transaction(transaction)
+
+    def search_quotes_by_text(self, text, guild_id):
+        logger.info("Searching quotes by text...")
+        def transaction(session):
+            pattern = f"%{text}%"
+            quotes = session.query(Quote).filter(and_(Quote.message.like(pattern), Quote.guild_id == guild_id)).all()
+            return [{
+                "id": quote.id,
+                "user_id": quote.user_id,
+                "guild_id": quote.guild_id,
+                "message": quote.message,
+                "date_submitted": quote.date_submitted,
+                "date_last_viewed": quote.date_last_viewed
+            } for quote in quotes]
+        return self.execute_transaction(transaction)
+
+    def delete_quote(self, quote_id, guild_id):
+        logger.info("Deleting a quote from the database...")
+        def transaction(session):
+            quote = session.query(Quote).filter_by(id=quote_id, guild_id=guild_id).first()
+            if quote:
+                session.delete(quote)
+                logger.info("Quote deleted successfully.")
+                return True
+            else:
+                logger.warning(f"Quote with ID {quote_id} in guild {guild_id} not found.")
+                return False
         return self.execute_transaction(transaction)
 
