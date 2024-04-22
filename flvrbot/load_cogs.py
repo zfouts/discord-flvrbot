@@ -24,6 +24,7 @@ class CogLoader:
             'flvrbot.cogs.basic',
             'flvrbot.cogs.unitconvert',
             'flvrbot.cogs.rekt',
+            'flvrbot.cogs.echo',
             'flvrbot.cogs.decider',
             'flvrbot.cogs.roulette',
             'flvrbot.cogs.slap',
