@@ -50,7 +50,7 @@ class UserStatsCog(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         module: discord.Option(str, description="Enter module to view stats", required=False, default='user'), # type: ignore
-        sort_by: discord.Option(str, description="How to sort the stats", required=False, default='characters') # type: ignore
+        sort_by: discord.Option(str, description="How to sort the stats", required=False, default='messages') # type: ignore
     ):
         valid_modules = self.db_manager.get_valid_modules_and_sort_options()
         if module not in valid_modules:
